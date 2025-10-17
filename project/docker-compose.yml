@@ -1,5 +1,8 @@
 version: '3'
 
+networks:
+  project-network:
+
 services:
 
   broker-service:
@@ -12,6 +15,28 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    networks:
+      - project-network
+  
+  mail-service:
+    build:
+      context: ./../mail-service
+      dockerfile: ./../mail-service/mail-service.dockerfile
+    restart: always
+    environment:
+      MAIL_DOMAIN: localhost
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ''
+      MAIL_PASSWORD: ''
+      MAIL_ENCRYPTION: none
+      FROM_NAME: 'John Smith'
+      FROM_ADDRESS: john.smith@example.com
+    deploy:
+      mode: replicated
+      replicas: 1
+    networks:
+      - project-network
   
   logger-service:
     build:
@@ -21,6 +46,8 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    networks:
+      - project-network
 
   authentication-service:
     build:
@@ -34,6 +61,8 @@ services:
       replicas: 1
     environment:
       DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+    networks:
+      - project-network
 
   postgres:
     image: 'postgres:14.2'
@@ -49,6 +78,8 @@ services:
     restart: always
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data/
+    networks:
+      - project-network
   
   mongo:
     image: 'mongo:4.2.16-bionic'
@@ -61,6 +92,8 @@ services:
     volumes:
       - ./db-data/mongo:/data/db
     restart: always
+    networks:
+      - project-network
 
   mailhog:
     image: 'mailhog/mailhog:latest'
@@ -68,3 +101,5 @@ services:
       - "1025:1025"
       - "8025:8025"
     restart: always
+    networks:
+        - project-network
