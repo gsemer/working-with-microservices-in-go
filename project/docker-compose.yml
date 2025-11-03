@@ -1,10 +1,9 @@
-version: '3'
+version: '3.8'
 
 networks:
   project-network:
 
 services:
-
   broker-service:
     build:
       context: ./../broker-service
@@ -12,6 +11,9 @@ services:
     restart: always
     ports:
       - "8080:80"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     deploy:
       mode: replicated
       replicas: 1
@@ -68,10 +70,15 @@ services:
     build:
       context: ./../listener-service
       dockerfile: ./../listener-service/listener-service.dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     deploy:
       mode: replicated
       replicas: 1
     restart: always
+    networks:
+      - project-network
 
   postgres:
     image: 'postgres:14.2'
@@ -111,7 +118,7 @@ services:
       - "8025:8025"
     restart: always
     networks:
-        - project-network
+      - project-network
   
   rabbitmq:
     image: 'rabbitmq:3.9-alpine'
@@ -120,5 +127,12 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
     volumes:
       - ./db-data/rabbitmq/:/var/lib/rabbitmq/
+    networks:
+      - project-network
